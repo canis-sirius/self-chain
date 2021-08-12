@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from backend.blockchain.block import Block, GENESIS_DATA
 from backend.config import MINE_RATE, SECONDS
 from backend.utils.hex_to_binary import hex_to_binary
@@ -40,3 +42,32 @@ def test_slowly_mined_block():
     mined_block = Block.mine_block(last_block, 'bar')
 
     assert mined_block.difficulty == last_block.difficulty - 1
+
+
+@pytest.fixture
+def last_block():
+    return Block.genesis()
+
+
+@pytest.fixture
+def block(last_block):
+    return Block.mine_block(last_block, 'test_data')
+
+
+def test_is_valid_block(last_block, block):
+    Block.is_valid_block(last_block, block)
+
+
+def test_is_valid_block_bad_last_hash(last_block, block):
+    block.last_hash = 'evil_last_hash'
+
+    with pytest.raises(Exception, match='last_hash must be correct'):
+        Block.is_valid_block(last_block, block)
+
+
+def test_is_valid_bad_proof_of_work(last_block, block):
+    block.hash = 'fff'
+
+    with pytest.raises(Exception, match='proof of work requirement was not met'):
+        Block.is_valid_block(last_block, block)
+
